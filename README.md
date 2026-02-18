@@ -4,7 +4,7 @@ An end-to-end GraphRAG pipeline that combines **Qdrant** hybrid vector search wi
 
 The graph doesn't just enrich results with metadata -- it **discovers new relevant documents** by traversing shared concepts and methods between papers.
 
-![GraphRAG](images/graph.jpg)
+![Video Advanced GraphRAG](images/advanced-graph.mp4)
 
 ## Architecture
 
@@ -53,6 +53,8 @@ dataset = load_dataset(
 ```
 
 ## Knowledge Graph Schema
+
+![GraphRAG](images/graph.jpg)
 
 **Nodes:**
 
