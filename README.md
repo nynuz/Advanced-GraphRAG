@@ -9,7 +9,7 @@ The graph doesn't just enrich results with metadata -- it **discovers new releva
 ## Architecture
 
 <p align="center">
-  <img width="768" src="https://github.com/nynuz/Advanced-GraphRAG/blob/main/images/graphrag-schema.png">
+  <img width="680" src="https://github.com/nynuz/Advanced-GraphRAG/blob/main/images/graphrag-schema.png">
 </p>
 
 ## Dataset
