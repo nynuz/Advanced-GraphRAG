@@ -4,6 +4,8 @@ An end-to-end GraphRAG pipeline that combines **Qdrant** hybrid vector search wi
 
 The graph doesn't just enrich results with metadata -- it **discovers new relevant documents** by traversing shared concepts and methods between papers.
 
+![GraphRAG](images/graph.jpg)
+
 ## Architecture
 
 ```
@@ -66,11 +68,10 @@ The cross-paper relationships (`RELATED_TO`, `APPLIED_IN`, `SHARED_METHOD`) are 
 | **Embeddings** | OpenAI `text-embedding-3-small` | 1536-dimensional dense representations |
 | **LLM** | OpenAI `gpt-4.1-mini` | Entity extraction (structured output) + answer generation |
 | **Framework** | [LangChain](https://www.langchain.com/) | Orchestration, text splitting, prompt templates |
-| **Visualization** | [pyvis](https://pyvis.readthedocs.io/) | Interactive HTML graph visualizations |
 
 ## Notebook Walkthrough
 
-The notebook (`graphrag_showcase.ipynb`) is organized in 6 steps:
+The notebook (`graphrag.ipynb`) is organized in 6 steps:
 
 ### Step 1 -- Setup & Configuration
 Initialize Qdrant client, Neo4j driver, OpenAI embeddings and LLM.
@@ -111,7 +112,7 @@ Three demo queries with increasing complexity:
 Each query produces:
 - The answer with cited sources
 - A breakdown showing which documents came from **vector search** vs **graph discovery**
-- An **interactive pyvis graph** visualizing the reasoning path
+- An **interactive html graph** visualizing the reasoning path
 
 Plus a full Knowledge Graph overview visualization showing the top concepts, methods, and their interconnections.
 
@@ -126,8 +127,9 @@ Plus a full Knowledge Graph overview visualization showing the top concepts, met
 ### Setup
 
 ```bash
-# Install dependencies
-uv sync
+# Clone repository
+git clone https://github.com/nynuz/Advanced-GraphRAG.git
+cd Advanced-GraphRAG
 
 # Start Qdrant
 docker run -p 6333:6333 qdrant/qdrant
@@ -149,7 +151,7 @@ NEO4J_PASSWORD=your-password
 Run the notebook:
 
 ```bash
-uv run jupyter notebook notebooks/graphrag_showcase.ipynb
+uv run jupyter notebook graphrag.ipynb
 ```
 
 ## Design Decisions
