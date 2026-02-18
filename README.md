@@ -35,6 +35,23 @@ Merge + Deduplicate + Re-rank
 Enriched Context --> LLM --> Answer
 ```
 
+## Dataset
+
+I used dataset `armanc/scientific_papers` from HuggingFace. For speed of development, I only used the first ArXiv 500 papers, which I saved in `papers_data.csv`.
+Below is the code to download the entire dataset:
+
+```python
+from datasets import load_dataset
+
+dataset = load_dataset(
+    "armanc/scientific_papers",
+    "arxiv",
+    split="train",
+    trust_remote_code=True,
+    streaming=True
+)
+```
+
 ## Knowledge Graph Schema
 
 **Nodes:**
