@@ -1,0 +1,321 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 700px;
+                 background-color: #1a1a2e;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#e74c3c", "font": {"color": "white"}, "id": "query", "label": "Query", "shape": "diamond", "size": 35, "title": "How do concepts from quantum mechanics relate to information theory in modern computational approaches?"}, {"color": "#2ecc71", "font": {"color": "white"}, "id": "paper_0301", "label": "paper_0301", "shape": "dot", "size": 25, "title": "[GRAPH] quantum coherence or quantum superposition is one of the most fundamental feature of quantum mechanics that distinguishes the quantum world from the classical world .\nScore: 0.750"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0220", "label": "paper_0220", "shape": "dot", "size": 25, "title": "[VECTOR] efficient mechanisms to generate coherent superpositions of quantum states are central to a rich variety of applications in modern quantum physics . quantum logic gates ,\nScore: 0.500"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0028", "label": "paper_0028", "shape": "dot", "size": 25, "title": "[VECTOR] in quantum information processing , information is stored and processed with a quantum system .\nScore: 0.500"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0245", "label": "paper_0245", "shape": "dot", "size": 25, "title": "[VECTOR] the impossibility of superluminal communication through the use of quantum entanglement has already been vividly discussed in the past , see for example @xcite .\nScore: 0.333"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0118", "label": "paper_0118", "shape": "dot", "size": 25, "title": "[VECTOR] information encoded in qubits can be used for reliable quantum communication or efficient quantum computing @xcite .\nScore: 0.333"}, {"color": "#2ecc71", "font": {"color": "white"}, "id": "paper_0313", "label": "paper_0313", "shape": "dot", "size": 25, "title": "[GRAPH] universal quantum cloning refers to the possibility of constructing unitary transformations which approximately copy an arbitrary quantum state and hence partially alleviate the limitations of the no - cloning theorem @xcite ( see also @xcite and @xcite ) .\nScore: 0.300"}, {"color": "#2ecc71", "font": {"color": "white"}, "id": "paper_0190", "label": "paper_0190", "shape": "dot", "size": 25, "title": "[GRAPH] understanding and characterizing general features of the dynamics of open quantum systems is of great importance to physics , chemistry , and biology  @xcite .\nScore: 0.279"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0051", "label": "paper_0051", "shape": "dot", "size": 25, "title": "[VECTOR] the entanglement entropy , as a tool to detect and classify quantum phase transitions , has been playing an important role in the last fifteen years ( see @xcite and references therein ) . in one dimension , where most of the critical quantum chains are conformal invariant , the entanglement entropy provides a powerful tool to detect , as well to calculate , the central charge @xmath11 of the underlying cft .\nScore: 0.250"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_higher rank numerical range", "label": "higher rank numerical range", "shape": "dot", "size": 15, "title": "Concept: higher rank numerical range\nCategory: math_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_mixed unitary channel", "label": "mixed unitary channel", "shape": "dot", "size": 15, "title": "Concept: mixed unitary channel\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_error syndrome", "label": "error syndrome", "shape": "dot", "size": 15, "title": "Concept: error syndrome\nCategory: general"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum system", "label": "quantum system", "shape": "dot", "size": 15, "title": "Concept: quantum system\nCategory: physics_concept"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_recovery operation", "label": "recovery operation", "shape": "triangle", "size": 15, "title": "Method: recovery operation"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_quantum circuit", "label": "quantum circuit", "shape": "triangle", "size": 15, "title": "Method: quantum circuit"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_error syndrome readout", "label": "error syndrome readout", "shape": "triangle", "size": 15, "title": "Method: error syndrome readout"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_continuous symmetry", "label": "continuous symmetry", "shape": "dot", "size": 15, "title": "Concept: continuous symmetry\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum phase transition", "label": "quantum phase transition", "shape": "dot", "size": 15, "title": "Concept: quantum phase transition\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_conformal field theory", "label": "conformal field theory", "shape": "dot", "size": 15, "title": "Concept: conformal field theory\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_entanglement entropy", "label": "entanglement entropy", "shape": "dot", "size": 15, "title": "Concept: entanglement entropy\nCategory: physics_concept"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_ground state wavefunction expression", "label": "ground state wavefunction expression", "shape": "triangle", "size": 15, "title": "Method: ground state wavefunction expression"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_numerical calculation", "label": "numerical calculation", "shape": "triangle", "size": 15, "title": "Method: numerical calculation"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_ashkin-teller model", "label": "ashkin-teller model", "shape": "triangle", "size": 15, "title": "Method: ashkin-teller model"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum error", "label": "quantum error", "shape": "dot", "size": 15, "title": "Concept: quantum error\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_qubit", "label": "qubit", "shape": "dot", "size": 15, "title": "Concept: qubit\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum communication", "label": "quantum communication", "shape": "dot", "size": 15, "title": "Concept: quantum communication\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum fidelity", "label": "quantum fidelity", "shape": "dot", "size": 15, "title": "Concept: quantum fidelity\nCategory: physics_concept"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_quantum measurement", "label": "quantum measurement", "shape": "triangle", "size": 15, "title": "Method: quantum measurement"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_optimal universal disentangler", "label": "optimal universal disentangler", "shape": "triangle", "size": 15, "title": "Method: optimal universal disentangler"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_state estimation", "label": "state estimation", "shape": "triangle", "size": 15, "title": "Method: state estimation"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum tunnelling", "label": "quantum tunnelling", "shape": "dot", "size": 15, "title": "Concept: quantum tunnelling\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum logic gate", "label": "quantum logic gate", "shape": "dot", "size": 15, "title": "Concept: quantum logic gate\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_frequency conversion", "label": "frequency conversion", "shape": "dot", "size": 15, "title": "Concept: frequency conversion\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_coherent superposition", "label": "coherent superposition", "shape": "dot", "size": 15, "title": "Concept: coherent superposition\nCategory: physics_concept"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_two-photon excitation", "label": "two-photon excitation", "shape": "triangle", "size": 15, "title": "Method: two-photon excitation"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_adiabatic passage assisted by dynamic stark shifts", "label": "adiabatic passage assisted by dynamic stark shifts", "shape": "triangle", "size": 15, "title": "Method: adiabatic passage assisted by dynamic stark shifts"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_laser field excitation", "label": "laser field excitation", "shape": "triangle", "size": 15, "title": "Method: laser field excitation"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum state fidelity", "label": "quantum state fidelity", "shape": "dot", "size": 15, "title": "Concept: quantum state fidelity\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_superluminal communication", "label": "superluminal communication", "shape": "dot", "size": 15, "title": "Concept: superluminal communication\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum mechanics non locality", "label": "quantum mechanics non locality", "shape": "dot", "size": 15, "title": "Concept: quantum mechanics non locality\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum measurement", "label": "quantum measurement", "shape": "dot", "size": 15, "title": "Concept: quantum measurement\nCategory: physics_concept"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_orthogonal measurement basis selection", "label": "orthogonal measurement basis selection", "shape": "triangle", "size": 15, "title": "Method: orthogonal measurement basis selection"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_entanglement based communication scheme", "label": "entanglement based communication scheme", "shape": "triangle", "size": 15, "title": "Method: entanglement based communication scheme"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_approximate quantum cloning", "label": "approximate quantum cloning", "shape": "triangle", "size": 15, "title": "Method: approximate quantum cloning"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum channel", "label": "quantum channel", "shape": "dot", "size": 15, "title": "Shared: quantum channel"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_quantum entanglement", "label": "quantum entanglement", "shape": "dot", "size": 15, "title": "Shared: quantum entanglement"}]);
+                  edges = new vis.DataSet([{"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0220", "width": 2}, {"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0028", "width": 2}, {"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0245", "width": 2}, {"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0118", "width": 2}, {"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0051", "width": 2}, {"color": "#e67e2288", "from": "paper_0028", "title": "MENTIONS_CONCEPT", "to": "concept_higher rank numerical range", "width": 1}, {"color": "#e67e2288", "from": "paper_0028", "title": "MENTIONS_CONCEPT", "to": "concept_mixed unitary channel", "width": 1}, {"color": "#e67e2288", "from": "paper_0028", "title": "MENTIONS_CONCEPT", "to": "concept_error syndrome", "width": 1}, {"color": "#e67e2288", "from": "paper_0028", "title": "MENTIONS_CONCEPT", "to": "concept_quantum system", "width": 1}, {"color": "#9b59b688", "from": "paper_0028", "title": "USES_METHOD", "to": "method_recovery operation", "width": 1}, {"color": "#9b59b688", "from": "paper_0028", "title": "USES_METHOD", "to": "method_quantum circuit", "width": 1}, {"color": "#9b59b688", "from": "paper_0028", "title": "USES_METHOD", "to": "method_error syndrome readout", "width": 1}, {"color": "#e67e2288", "from": "paper_0051", "title": "MENTIONS_CONCEPT", "to": "concept_continuous symmetry", "width": 1}, {"color": "#e67e2288", "from": "paper_0051", "title": "MENTIONS_CONCEPT", "to": "concept_quantum phase transition", "width": 1}, {"color": "#e67e2288", "from": "paper_0051", "title": "MENTIONS_CONCEPT", "to": "concept_conformal field theory", "width": 1}, {"color": "#e67e2288", "from": "paper_0051", "title": "MENTIONS_CONCEPT", "to": "concept_entanglement entropy", "width": 1}, {"color": "#9b59b688", "from": "paper_0051", "title": "USES_METHOD", "to": "method_ground state wavefunction expression", "width": 1}, {"color": "#9b59b688", "from": "paper_0051", "title": "USES_METHOD", "to": "method_numerical calculation", "width": 1}, {"color": "#9b59b688", "from": "paper_0051", "title": "USES_METHOD", "to": "method_ashkin-teller model", "width": 1}, {"color": "#e67e2288", "from": "paper_0118", "title": "MENTIONS_CONCEPT", "to": "concept_quantum error", "width": 1}, {"color": "#e67e2288", "from": "paper_0118", "title": "MENTIONS_CONCEPT", "to": "concept_qubit", "width": 1}, {"color": "#e67e2288", "from": "paper_0118", "title": "MENTIONS_CONCEPT", "to": "concept_quantum communication", "width": 1}, {"color": "#e67e2288", "from": "paper_0118", "title": "MENTIONS_CONCEPT", "to": "concept_quantum fidelity", "width": 1}, {"color": "#9b59b688", "from": "paper_0118", "title": "USES_METHOD", "to": "method_quantum measurement", "width": 1}, {"color": "#9b59b688", "from": "paper_0118", "title": "USES_METHOD", "to": "method_optimal universal disentangler", "width": 1}, {"color": "#9b59b688", "from": "paper_0118", "title": "USES_METHOD", "to": "method_state estimation", "width": 1}, {"color": "#e67e2288", "from": "paper_0220", "title": "MENTIONS_CONCEPT", "to": "concept_quantum tunnelling", "width": 1}, {"color": "#e67e2288", "from": "paper_0220", "title": "MENTIONS_CONCEPT", "to": "concept_quantum logic gate", "width": 1}, {"color": "#e67e2288", "from": "paper_0220", "title": "MENTIONS_CONCEPT", "to": "concept_frequency conversion", "width": 1}, {"color": "#e67e2288", "from": "paper_0220", "title": "MENTIONS_CONCEPT", "to": "concept_coherent superposition", "width": 1}, {"color": "#9b59b688", "from": "paper_0220", "title": "USES_METHOD", "to": "method_two-photon excitation", "width": 1}, {"color": "#9b59b688", "from": "paper_0220", "title": "USES_METHOD", "to": "method_adiabatic passage assisted by dynamic stark shifts", "width": 1}, {"color": "#9b59b688", "from": "paper_0220", "title": "USES_METHOD", "to": "method_laser field excitation", "width": 1}, {"color": "#e67e2288", "from": "paper_0245", "title": "MENTIONS_CONCEPT", "to": "concept_quantum state fidelity", "width": 1}, {"color": "#e67e2288", "from": "paper_0245", "title": "MENTIONS_CONCEPT", "to": "concept_superluminal communication", "width": 1}, {"color": "#e67e2288", "from": "paper_0245", "title": "MENTIONS_CONCEPT", "to": "concept_quantum mechanics non locality", "width": 1}, {"color": "#e67e2288", "from": "paper_0245", "title": "MENTIONS_CONCEPT", "to": "concept_quantum measurement", "width": 1}, {"color": "#9b59b688", "from": "paper_0245", "title": "USES_METHOD", "to": "method_orthogonal measurement basis selection", "width": 1}, {"color": "#9b59b688", "from": "paper_0245", "title": "USES_METHOD", "to": "method_entanglement based communication scheme", "width": 1}, {"color": "#9b59b688", "from": "paper_0245", "title": "USES_METHOD", "to": "method_approximate quantum cloning", "width": 1}, {"color": "#2ecc71", "dashes": true, "from": "concept_quantum channel", "title": "graph discovery via concept", "to": "paper_0301", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_quantum fidelity", "title": "graph discovery via concept", "to": "paper_0301", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_quantum entanglement", "title": "graph discovery via concept", "to": "paper_0301", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_quantum state fidelity", "title": "graph discovery via concept", "to": "paper_0313", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_quantum entanglement", "title": "graph discovery via concept", "to": "paper_0313", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_quantum channel", "title": "graph discovery via concept", "to": "paper_0190", "width": 2}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"forceAtlas2Based": {"gravitationalConstant": -100, "centralGravity": 0.01, "springLength": 200, "springConstant": 0.05}, "solver": "forceAtlas2Based", "stabilization": {"iterations": 150}}, "nodes": {"font": {"size": 14, "face": "Arial"}}, "edges": {"smooth": {"type": "continuous"}, "font": {"size": 10, "align": "middle"}}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

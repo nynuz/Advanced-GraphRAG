@@ -1,0 +1,321 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 700px;
+                 background-color: #1a1a2e;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#e74c3c", "font": {"color": "white"}, "id": "query", "label": "Query", "shape": "diamond", "size": 35, "title": "Compare the phase transition behaviors described by the Ising model and Heisenberg model in the context of statistical mechanics, and how do these frameworks apply to understanding superconductivity?"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0448", "label": "paper_0448", "shape": "dot", "size": 25, "title": "[VECTOR] the aim of statistical mechanics is to obtain a qualitative understanding of natural phenomena of phase transitions by the study of simplified models , often built on a lattices . in general the hamiltonian of a model of statistical mechanics\nScore: 1.000"}, {"color": "#2ecc71", "font": {"color": "white"}, "id": "paper_0224", "label": "paper_0224", "shape": "dot", "size": 25, "title": "[GRAPH] competing electronic phases underlie a number of the most unconventional phenomena in condensed matter systems . when this competition is sufficiently strong , the usual outcome is a phase separation .\nScore: 0.630"}, {"color": "#2ecc71", "font": {"color": "white"}, "id": "paper_0321", "label": "paper_0321", "shape": "dot", "size": 25, "title": "[GRAPH] the swendsen - wang ( sw ) algorithm and related cluster methods  @xcite have greatly improved the efficiency of simulating the critical region of a variety of spin models .\nScore: 0.450"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0044", "label": "paper_0044", "shape": "dot", "size": 25, "title": "[VECTOR] the statistical mechanics of pure systems \nScore: 0.350"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0210", "label": "paper_0210", "shape": "dot", "size": 25, "title": "[VECTOR] in the studies of spin glasses , much effort has been devoted either exprimentally or theoretically to the properties under magnetic fields .\nScore: 0.333"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0369", "label": "paper_0369", "shape": "dot", "size": 25, "title": "[VECTOR] the interplay between spin density wave ( sdw ) ordering and superconductivity clearly plays a central role in the physics of a variety of quasi two - dimensional correlated electron materials .\nScore: 0.333"}, {"color": "#2ecc71", "font": {"color": "white"}, "id": "paper_0042", "label": "paper_0042", "shape": "dot", "size": 25, "title": "[GRAPH] the transformation , upon charge doping , of an antiferromagnetic ( af ) mott insulator into a superconducting ( sc ) metal and the role of af correlations in the appearance of superconductivity have challenged researchers since the discovery of high-@xmath12 superconductivity in cuprates .\nScore: 0.315"}, {"color": "#3498db", "font": {"color": "white"}, "id": "paper_0043", "label": "paper_0043", "shape": "dot", "size": 25, "title": "[VECTOR] massimo capone is thanked for useful discussions .\nScore: 0.250"}, {"color": "#2ecc71", "font": {"color": "white"}, "id": "paper_0484", "label": "paper_0484", "shape": "dot", "size": 25, "title": "[GRAPH] the unconventional superconductors have a rich phase diagram determined by the interplay of multiple competing , or coexisting , types of order .\nScore: 0.225"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_charge density wave", "label": "charge density wave", "shape": "dot", "size": 15, "title": "Concept: charge density wave\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_antiferromagnetic coupling", "label": "antiferromagnetic coupling", "shape": "dot", "size": 15, "title": "Concept: antiferromagnetic coupling\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_mott hubbard insulator", "label": "mott hubbard insulator", "shape": "dot", "size": 15, "title": "Concept: mott hubbard insulator\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_nuclear magnetic resonance", "label": "nuclear magnetic resonance", "shape": "dot", "size": 15, "title": "Concept: nuclear magnetic resonance\nCategory: General"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_nuclear quadrupole resonance measurement", "label": "nuclear quadrupole resonance measurement", "shape": "triangle", "size": 15, "title": "Method: nuclear quadrupole resonance measurement"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_nuclear magnetic resonance measurement", "label": "nuclear magnetic resonance measurement", "shape": "triangle", "size": 15, "title": "Method: nuclear magnetic resonance measurement"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_statistical mechanics", "label": "statistical mechanics", "shape": "dot", "size": 15, "title": "Concept: statistical mechanics\nCategory: General"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_phase transition", "label": "phase transition", "shape": "dot", "size": 15, "title": "Concept: phase transition\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_freezing point depression", "label": "freezing point depression", "shape": "dot", "size": 15, "title": "Concept: freezing point depression\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_chemical potential", "label": "chemical potential", "shape": "dot", "size": 15, "title": "Concept: chemical potential\nCategory: physics_concept"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_ising model", "label": "ising model", "shape": "triangle", "size": 15, "title": "Method: ising model"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_chiral glass transition", "label": "chiral glass transition", "shape": "dot", "size": 15, "title": "Concept: chiral glass transition\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_ising spin glass", "label": "ising spin glass", "shape": "dot", "size": 15, "title": "Concept: ising spin glass\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_spin glass", "label": "spin glass", "shape": "dot", "size": 15, "title": "Concept: spin glass\nCategory: physics_concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_gabay-toulouse line", "label": "gabay-toulouse line", "shape": "dot", "size": 15, "title": "Concept: gabay-toulouse line\nCategory: physics_concept"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_edwards-anderson model", "label": "edwards-anderson model", "shape": "triangle", "size": 15, "title": "Method: edwards-anderson model"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_mean field model", "label": "mean field model", "shape": "triangle", "size": 15, "title": "Method: mean field model"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_monte carlo simulation", "label": "monte carlo simulation", "shape": "triangle", "size": 15, "title": "Method: monte carlo simulation"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_fermi surface effects", "label": "fermi surface effects", "shape": "dot", "size": 15, "title": "Concept: fermi surface effects\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_ising-nematic order", "label": "ising-nematic order", "shape": "dot", "size": 15, "title": "Concept: ising-nematic order\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_competition between orders", "label": "competition between orders", "shape": "dot", "size": 15, "title": "Concept: competition between orders\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_phase diagram", "label": "phase diagram", "shape": "dot", "size": 15, "title": "Concept: phase diagram\nCategory: General"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_quantum critical point shift calculation", "label": "quantum critical point shift calculation", "shape": "triangle", "size": 15, "title": "Method: quantum critical point shift calculation"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_sdw transition analysis", "label": "sdw transition analysis", "shape": "triangle", "size": 15, "title": "Method: sdw transition analysis"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_magnetic field tuning", "label": "magnetic field tuning", "shape": "triangle", "size": 15, "title": "Method: magnetic field tuning"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_co-membrane model", "label": "co-membrane model", "shape": "dot", "size": 15, "title": "Concept: co-membrane model\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_disorder relevance", "label": "disorder relevance", "shape": "dot", "size": 15, "title": "Concept: disorder relevance\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_disordered pinning model", "label": "disordered pinning model", "shape": "dot", "size": 15, "title": "Concept: disordered pinning model\nCategory: Physics_Concept"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_lattice gaussian free field", "label": "lattice gaussian free field", "shape": "dot", "size": 15, "title": "Concept: lattice gaussian free field\nCategory: Physics_Concept"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "method_lattice model", "label": "lattice model", "shape": "triangle", "size": 15, "title": "Method: lattice model"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_phase separation", "label": "phase separation", "shape": "dot", "size": 15, "title": "Shared: phase separation"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_superconductivity", "label": "superconductivity", "shape": "dot", "size": 15, "title": "Shared: superconductivity"}, {"color": "#e67e22", "font": {"color": "white"}, "id": "concept_ising model", "label": "ising model", "shape": "dot", "size": 15, "title": "Shared: ising model"}]);
+                  edges = new vis.DataSet([{"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0448", "width": 2}, {"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0044", "width": 2}, {"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0210", "width": 2}, {"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0369", "width": 2}, {"color": "#3498db", "from": "query", "title": "hybrid search", "to": "paper_0043", "width": 2}, {"color": "#e67e2288", "from": "paper_0043", "title": "MENTIONS_CONCEPT", "to": "concept_charge density wave", "width": 1}, {"color": "#e67e2288", "from": "paper_0043", "title": "MENTIONS_CONCEPT", "to": "concept_antiferromagnetic coupling", "width": 1}, {"color": "#e67e2288", "from": "paper_0043", "title": "MENTIONS_CONCEPT", "to": "concept_mott hubbard insulator", "width": 1}, {"color": "#e67e2288", "from": "paper_0043", "title": "MENTIONS_CONCEPT", "to": "concept_nuclear magnetic resonance", "width": 1}, {"color": "#9b59b688", "from": "paper_0043", "title": "USES_METHOD", "to": "method_nuclear quadrupole resonance measurement", "width": 1}, {"color": "#9b59b688", "from": "paper_0043", "title": "USES_METHOD", "to": "method_nuclear magnetic resonance measurement", "width": 1}, {"color": "#e67e2288", "from": "paper_0044", "title": "MENTIONS_CONCEPT", "to": "concept_statistical mechanics", "width": 1}, {"color": "#e67e2288", "from": "paper_0044", "title": "MENTIONS_CONCEPT", "to": "concept_phase transition", "width": 1}, {"color": "#e67e2288", "from": "paper_0044", "title": "MENTIONS_CONCEPT", "to": "concept_freezing point depression", "width": 1}, {"color": "#e67e2288", "from": "paper_0044", "title": "MENTIONS_CONCEPT", "to": "concept_chemical potential", "width": 1}, {"color": "#9b59b688", "from": "paper_0044", "title": "USES_METHOD", "to": "method_ising model", "width": 1}, {"color": "#e67e2288", "from": "paper_0210", "title": "MENTIONS_CONCEPT", "to": "concept_chiral glass transition", "width": 1}, {"color": "#e67e2288", "from": "paper_0210", "title": "MENTIONS_CONCEPT", "to": "concept_ising spin glass", "width": 1}, {"color": "#e67e2288", "from": "paper_0210", "title": "MENTIONS_CONCEPT", "to": "concept_spin glass", "width": 1}, {"color": "#e67e2288", "from": "paper_0210", "title": "MENTIONS_CONCEPT", "to": "concept_gabay-toulouse line", "width": 1}, {"color": "#9b59b688", "from": "paper_0210", "title": "USES_METHOD", "to": "method_edwards-anderson model", "width": 1}, {"color": "#9b59b688", "from": "paper_0210", "title": "USES_METHOD", "to": "method_mean field model", "width": 1}, {"color": "#9b59b688", "from": "paper_0210", "title": "USES_METHOD", "to": "method_monte carlo simulation", "width": 1}, {"color": "#e67e2288", "from": "paper_0369", "title": "MENTIONS_CONCEPT", "to": "concept_fermi surface effects", "width": 1}, {"color": "#e67e2288", "from": "paper_0369", "title": "MENTIONS_CONCEPT", "to": "concept_ising-nematic order", "width": 1}, {"color": "#e67e2288", "from": "paper_0369", "title": "MENTIONS_CONCEPT", "to": "concept_competition between orders", "width": 1}, {"color": "#e67e2288", "from": "paper_0369", "title": "MENTIONS_CONCEPT", "to": "concept_phase diagram", "width": 1}, {"color": "#9b59b688", "from": "paper_0369", "title": "USES_METHOD", "to": "method_quantum critical point shift calculation", "width": 1}, {"color": "#9b59b688", "from": "paper_0369", "title": "USES_METHOD", "to": "method_sdw transition analysis", "width": 1}, {"color": "#9b59b688", "from": "paper_0369", "title": "USES_METHOD", "to": "method_magnetic field tuning", "width": 1}, {"color": "#e67e2288", "from": "paper_0448", "title": "MENTIONS_CONCEPT", "to": "concept_co-membrane model", "width": 1}, {"color": "#e67e2288", "from": "paper_0448", "title": "MENTIONS_CONCEPT", "to": "concept_disorder relevance", "width": 1}, {"color": "#e67e2288", "from": "paper_0448", "title": "MENTIONS_CONCEPT", "to": "concept_disordered pinning model", "width": 1}, {"color": "#e67e2288", "from": "paper_0448", "title": "MENTIONS_CONCEPT", "to": "concept_lattice gaussian free field", "width": 1}, {"color": "#9b59b688", "from": "paper_0448", "title": "USES_METHOD", "to": "method_lattice model", "width": 1}, {"color": "#9b59b688", "from": "paper_0448", "title": "USES_METHOD", "to": "method_ising model", "width": 1}, {"color": "#2ecc71", "dashes": true, "from": "concept_phase separation", "title": "graph discovery via concept", "to": "paper_0224", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_phase diagram", "title": "graph discovery via concept", "to": "paper_0224", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_superconductivity", "title": "graph discovery via concept", "to": "paper_0224", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_phase transition", "title": "graph discovery via concept", "to": "paper_0321", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_ising model", "title": "graph discovery via concept", "to": "paper_0321", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_phase diagram", "title": "graph discovery via concept", "to": "paper_0042", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_superconductivity", "title": "graph discovery via concept", "to": "paper_0042", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_phase diagram", "title": "graph discovery via concept", "to": "paper_0484", "width": 2}, {"color": "#2ecc71", "dashes": true, "from": "concept_superconductivity", "title": "graph discovery via concept", "to": "paper_0484", "width": 2}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"forceAtlas2Based": {"gravitationalConstant": -100, "centralGravity": 0.01, "springLength": 200, "springConstant": 0.05}, "solver": "forceAtlas2Based", "stabilization": {"iterations": 150}}, "nodes": {"font": {"size": 14, "face": "Arial"}}, "edges": {"smooth": {"type": "continuous"}, "font": {"size": 10, "align": "middle"}}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

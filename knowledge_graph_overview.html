@@ -1,0 +1,416 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 800px;
+                 background-color: #1a1a2e;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 800px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#95a5a6", "font": {"color": "white"}, "id": "c_standard model", "label": "standard model", "shape": "dot", "size": 42, "title": "Concept: standard model\nCategory: physics_concept\nPapers: 16"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_active galactic nucleus", "label": "active galactic nucleus", "shape": "dot", "size": 34, "title": "Concept: active galactic nucleus\nCategory: physics_concept\nPapers: 12"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_black hole", "label": "black hole", "shape": "dot", "size": 32, "title": "Concept: black hole\nCategory: physics_concept\nPapers: 11"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_dark matter", "label": "dark matter", "shape": "dot", "size": 32, "title": "Concept: dark matter\nCategory: physics_concept\nPapers: 11"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_gravitational wave", "label": "gravitational wave", "shape": "dot", "size": 30, "title": "Concept: gravitational wave\nCategory: physics_concept\nPapers: 10"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_quantum chromodynamics", "label": "quantum chromodynamics", "shape": "dot", "size": 30, "title": "Concept: quantum chromodynamics\nCategory: physics_concept\nPapers: 10"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_superconductivity", "label": "superconductivity", "shape": "dot", "size": 28, "title": "Concept: superconductivity\nCategory: Physics_Concept\nPapers: 9"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_higgs boson", "label": "higgs boson", "shape": "dot", "size": 26, "title": "Concept: higgs boson\nCategory: physics_concept\nPapers: 8"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_phase transition", "label": "phase transition", "shape": "dot", "size": 26, "title": "Concept: phase transition\nCategory: physics_concept\nPapers: 8"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_supermassive black hole", "label": "supermassive black hole", "shape": "dot", "size": 24, "title": "Concept: supermassive black hole\nCategory: Physics_Concept\nPapers: 7"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_gamma ray burst", "label": "gamma ray burst", "shape": "dot", "size": 24, "title": "Concept: gamma ray burst\nCategory: physics_concept\nPapers: 7"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_metallicity", "label": "metallicity", "shape": "dot", "size": 24, "title": "Concept: metallicity\nCategory: Physics_Concept\nPapers: 7"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_cp violation", "label": "cp violation", "shape": "dot", "size": 24, "title": "Concept: cp violation\nCategory: physics_concept\nPapers: 7"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_spectral energy distribution", "label": "spectral energy distribution", "shape": "dot", "size": 24, "title": "Concept: spectral energy distribution\nCategory: Physics_Concept\nPapers: 7"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_dark energy", "label": "dark energy", "shape": "dot", "size": 24, "title": "Concept: dark energy\nCategory: physics_concept\nPapers: 7"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_quark gluon plasma", "label": "quark gluon plasma", "shape": "dot", "size": 24, "title": "Concept: quark gluon plasma\nCategory: Physics_Concept\nPapers: 7"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_supersymmetry", "label": "supersymmetry", "shape": "dot", "size": 22, "title": "Concept: supersymmetry\nCategory: physics_concept\nPapers: 6"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_quantum entanglement", "label": "quantum entanglement", "shape": "dot", "size": 22, "title": "Concept: quantum entanglement\nCategory: physics_concept\nPapers: 6"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_stellar evolution", "label": "stellar evolution", "shape": "dot", "size": 22, "title": "Concept: stellar evolution\nCategory: Physics_Concept\nPapers: 6"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_magnetic field", "label": "magnetic field", "shape": "dot", "size": 22, "title": "Concept: magnetic field\nCategory: physics_concept\nPapers: 6"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_equation of state", "label": "equation of state", "shape": "dot", "size": 22, "title": "Concept: equation of state\nCategory: Physics_Concept\nPapers: 6"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_neutron star", "label": "neutron star", "shape": "dot", "size": 22, "title": "Concept: neutron star\nCategory: Physics_Concept\nPapers: 6"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_electroweak symmetry breaking", "label": "electroweak symmetry breaking", "shape": "dot", "size": 22, "title": "Concept: electroweak symmetry breaking\nCategory: physics_concept\nPapers: 6"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_velocity dispersion", "label": "velocity dispersion", "shape": "dot", "size": 20, "title": "Concept: velocity dispersion\nCategory: Physics_Concept\nPapers: 5"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_strong interaction", "label": "strong interaction", "shape": "dot", "size": 20, "title": "Concept: strong interaction\nCategory: physics_concept\nPapers: 5"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_general relativity", "label": "general relativity", "shape": "dot", "size": 20, "title": "Concept: general relativity\nCategory: physics_concept\nPapers: 5"}, {"color": "#e74c3c", "font": {"color": "white"}, "id": "c_ising model", "label": "ising model", "shape": "dot", "size": 20, "title": "Concept: ising model\nCategory: Physics_Concept\nPapers: 5"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_turbulence", "label": "turbulence", "shape": "dot", "size": 20, "title": "Concept: turbulence\nCategory: physics_concept\nPapers: 5"}, {"color": "#95a5a6", "font": {"color": "white"}, "id": "c_star formation rate", "label": "star formation rate", "shape": "dot", "size": 20, "title": "Concept: star formation rate\nCategory: general\nPapers: 5"}, {"color": "#2ecc71", "font": {"color": "white"}, "id": "c_renormalization group", "label": "renormalization group", "shape": "dot", "size": 20, "title": "Concept: renormalization group\nCategory: Statistical_Method\nPapers: 5"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_numerical simulation", "label": "numerical simulation", "shape": "triangle", "size": 52, "title": "Method: numerical simulation\nPapers: 21"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_monte carlo simulation", "label": "monte carlo simulation", "shape": "triangle", "size": 32, "title": "Method: monte carlo simulation\nPapers: 11"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_spectral analysis", "label": "spectral analysis", "shape": "triangle", "size": 20, "title": "Method: spectral analysis\nPapers: 5"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_infrared spectroscopy", "label": "infrared spectroscopy", "shape": "triangle", "size": 20, "title": "Method: infrared spectroscopy\nPapers: 5"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_perturbation theory", "label": "perturbation theory", "shape": "triangle", "size": 18, "title": "Method: perturbation theory\nPapers: 4"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_molecular dynamics simulation", "label": "molecular dynamics simulation", "shape": "triangle", "size": 18, "title": "Method: molecular dynamics simulation\nPapers: 4"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_numerical integration", "label": "numerical integration", "shape": "triangle", "size": 18, "title": "Method: numerical integration\nPapers: 4"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_bifurcation analysis", "label": "bifurcation analysis", "shape": "triangle", "size": 16, "title": "Method: bifurcation analysis\nPapers: 3"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_simulation", "label": "simulation", "shape": "triangle", "size": 16, "title": "Method: simulation\nPapers: 3"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_statistical analysis", "label": "statistical analysis", "shape": "triangle", "size": 16, "title": "Method: statistical analysis\nPapers: 3"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_stability analysis", "label": "stability analysis", "shape": "triangle", "size": 16, "title": "Method: stability analysis\nPapers: 3"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_gravitational wave detection", "label": "gravitational wave detection", "shape": "triangle", "size": 16, "title": "Method: gravitational wave detection\nPapers: 3"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_density functional theory", "label": "density functional theory", "shape": "triangle", "size": 16, "title": "Method: density functional theory\nPapers: 3"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_perturbative quantum chromodynamics", "label": "perturbative quantum chromodynamics", "shape": "triangle", "size": 16, "title": "Method: perturbative quantum chromodynamics\nPapers: 3"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_associated production", "label": "associated production", "shape": "triangle", "size": 14, "title": "Method: associated production\nPapers: 2"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_x-ray survey", "label": "x-ray survey", "shape": "triangle", "size": 14, "title": "Method: x-ray survey\nPapers: 2"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_linearization", "label": "linearization", "shape": "triangle", "size": 14, "title": "Method: linearization\nPapers: 2"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_numerical method", "label": "numerical method", "shape": "triangle", "size": 14, "title": "Method: numerical method\nPapers: 2"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_ising model", "label": "ising model", "shape": "triangle", "size": 14, "title": "Method: ising model\nPapers: 2"}, {"color": "#9b59b6", "font": {"color": "white"}, "id": "m_nuclear quadrupole resonance measurement", "label": "nuclear quadrupole resonance measurement", "shape": "triangle", "size": 14, "title": "Method: nuclear quadrupole resonance measurement\nPapers: 2"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_chaos theory", "label": "chaos theory", "shape": "square", "size": 20, "title": "Research Area: chaos theory"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_computational physics", "label": "computational physics", "shape": "square", "size": 20, "title": "Research Area: computational physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_star formation", "label": "star formation", "shape": "square", "size": 20, "title": "Research Area: star formation"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_many-body physics", "label": "many-body physics", "shape": "square", "size": 20, "title": "Research Area: many-body physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_nanotechnology", "label": "nanotechnology", "shape": "square", "size": 20, "title": "Research Area: nanotechnology"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_galactic astronomy", "label": "galactic astronomy", "shape": "square", "size": 20, "title": "Research Area: galactic astronomy"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_high energy astrophysics", "label": "high energy astrophysics", "shape": "square", "size": 20, "title": "Research Area: high energy astrophysics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_cosmology", "label": "cosmology", "shape": "square", "size": 20, "title": "Research Area: cosmology"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_stellar dynamics", "label": "stellar dynamics", "shape": "square", "size": 20, "title": "Research Area: stellar dynamics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_solar physics", "label": "solar physics", "shape": "square", "size": 20, "title": "Research Area: solar physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_general relativity", "label": "general relativity", "shape": "square", "size": 20, "title": "Research Area: general relativity"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_plasma physics", "label": "plasma physics", "shape": "square", "size": 20, "title": "Research Area: plasma physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_ecology", "label": "ecology", "shape": "square", "size": 20, "title": "Research Area: ecology"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_soft condensed matter physics", "label": "soft condensed matter physics", "shape": "square", "size": 20, "title": "Research Area: soft condensed matter physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_statistical physics", "label": "statistical physics", "shape": "square", "size": 20, "title": "Research Area: statistical physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_astrophysics", "label": "astrophysics", "shape": "square", "size": 20, "title": "Research Area: astrophysics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_applied mathematics", "label": "applied mathematics", "shape": "square", "size": 20, "title": "Research Area: applied mathematics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_dynamical systems", "label": "dynamical systems", "shape": "square", "size": 20, "title": "Research Area: dynamical systems"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_nonlinear dynamics", "label": "nonlinear dynamics", "shape": "square", "size": 20, "title": "Research Area: nonlinear dynamics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_condensed matter physics", "label": "condensed matter physics", "shape": "square", "size": 20, "title": "Research Area: condensed matter physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_atomic physics", "label": "atomic physics", "shape": "square", "size": 20, "title": "Research Area: atomic physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_fluid dynamics", "label": "fluid dynamics", "shape": "square", "size": 20, "title": "Research Area: fluid dynamics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_quantum physics", "label": "quantum physics", "shape": "square", "size": 20, "title": "Research Area: quantum physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_biophysics", "label": "biophysics", "shape": "square", "size": 20, "title": "Research Area: biophysics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_statistical mechanics", "label": "statistical mechanics", "shape": "square", "size": 20, "title": "Research Area: statistical mechanics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_quantum information", "label": "quantum information", "shape": "square", "size": 20, "title": "Research Area: quantum information"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_complex systems", "label": "complex systems", "shape": "square", "size": 20, "title": "Research Area: complex systems"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_galaxy evolution", "label": "galaxy evolution", "shape": "square", "size": 20, "title": "Research Area: galaxy evolution"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_network science", "label": "network science", "shape": "square", "size": 20, "title": "Research Area: network science"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_mathematical physics", "label": "mathematical physics", "shape": "square", "size": 20, "title": "Research Area: mathematical physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_differential geometry", "label": "differential geometry", "shape": "square", "size": 20, "title": "Research Area: differential geometry"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_cosmic ray physics", "label": "cosmic ray physics", "shape": "square", "size": 20, "title": "Research Area: cosmic ray physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_cyber security", "label": "cyber security", "shape": "square", "size": 20, "title": "Research Area: cyber security"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_high energy physics", "label": "high energy physics", "shape": "square", "size": 20, "title": "Research Area: high energy physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_control systems", "label": "control systems", "shape": "square", "size": 20, "title": "Research Area: control systems"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_acoustics", "label": "acoustics", "shape": "square", "size": 20, "title": "Research Area: acoustics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_particle physics", "label": "particle physics", "shape": "square", "size": 20, "title": "Research Area: particle physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_astroparticle physics", "label": "astroparticle physics", "shape": "square", "size": 20, "title": "Research Area: astroparticle physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_nuclear physics", "label": "nuclear physics", "shape": "square", "size": 20, "title": "Research Area: nuclear physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_power systems", "label": "power systems", "shape": "square", "size": 20, "title": "Research Area: power systems"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_x-ray astronomy", "label": "x-ray astronomy", "shape": "square", "size": 20, "title": "Research Area: x-ray astronomy"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_planetary science", "label": "planetary science", "shape": "square", "size": 20, "title": "Research Area: planetary science"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_magnetism", "label": "magnetism", "shape": "square", "size": 20, "title": "Research Area: magnetism"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_superconductivity", "label": "superconductivity", "shape": "square", "size": 20, "title": "Research Area: superconductivity"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_theoretical physics", "label": "theoretical physics", "shape": "square", "size": 20, "title": "Research Area: theoretical physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_differential equations", "label": "differential equations", "shape": "square", "size": 20, "title": "Research Area: differential equations"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_gravitational wave astronomy", "label": "gravitational wave astronomy", "shape": "square", "size": 20, "title": "Research Area: gravitational wave astronomy"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_computer vision", "label": "computer vision", "shape": "square", "size": 20, "title": "Research Area: computer vision"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_robotics", "label": "robotics", "shape": "square", "size": 20, "title": "Research Area: robotics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_machine learning", "label": "machine learning", "shape": "square", "size": 20, "title": "Research Area: machine learning"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_polymer physics", "label": "polymer physics", "shape": "square", "size": 20, "title": "Research Area: polymer physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_evolutionary biology", "label": "evolutionary biology", "shape": "square", "size": 20, "title": "Research Area: evolutionary biology"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_experimental physics", "label": "experimental physics", "shape": "square", "size": 20, "title": "Research Area: experimental physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_observational astronomy", "label": "observational astronomy", "shape": "square", "size": 20, "title": "Research Area: observational astronomy"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_topological quantum computation", "label": "topological quantum computation", "shape": "square", "size": 20, "title": "Research Area: topological quantum computation"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_infrared astronomy", "label": "infrared astronomy", "shape": "square", "size": 20, "title": "Research Area: infrared astronomy"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_stellar astronomy", "label": "stellar astronomy", "shape": "square", "size": 20, "title": "Research Area: stellar astronomy"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_astrochemistry", "label": "astrochemistry", "shape": "square", "size": 20, "title": "Research Area: astrochemistry"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_stellar evolution", "label": "stellar evolution", "shape": "square", "size": 20, "title": "Research Area: stellar evolution"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_radio astronomy", "label": "radio astronomy", "shape": "square", "size": 20, "title": "Research Area: radio astronomy"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_spintronics", "label": "spintronics", "shape": "square", "size": 20, "title": "Research Area: spintronics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_black hole physics", "label": "black hole physics", "shape": "square", "size": 20, "title": "Research Area: black hole physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_gravitational physics", "label": "gravitational physics", "shape": "square", "size": 20, "title": "Research Area: gravitational physics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_nonlinear science", "label": "nonlinear science", "shape": "square", "size": 20, "title": "Research Area: nonlinear science"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_mathematics", "label": "mathematics", "shape": "square", "size": 20, "title": "Research Area: mathematics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_quantum chromodynamics", "label": "quantum chromodynamics", "shape": "square", "size": 20, "title": "Research Area: quantum chromodynamics"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_quantum field theory", "label": "quantum field theory", "shape": "square", "size": 20, "title": "Research Area: quantum field theory"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_stochastic processes", "label": "stochastic processes", "shape": "square", "size": 20, "title": "Research Area: stochastic processes"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_numerical analysis", "label": "numerical analysis", "shape": "square", "size": 20, "title": "Research Area: numerical analysis"}, {"color": "#f39c12", "font": {"color": "white"}, "id": "a_tribology", "label": "tribology", "shape": "square", "size": 20, "title": "Research Area: tribology"}]);
+                  edges = new vis.DataSet([{"color": "#e67e2266", "from": "c_cp violation", "title": "RELATED_TO (strength: 4)", "to": "c_standard model", "width": 4}, {"color": "#e67e2266", "from": "c_standard model", "title": "RELATED_TO (strength: 4)", "to": "c_supersymmetry", "width": 4}, {"color": "#e67e2266", "from": "c_ising model", "title": "RELATED_TO (strength: 2)", "to": "c_phase transition", "width": 2}, {"color": "#e67e2266", "from": "c_cp violation", "title": "RELATED_TO (strength: 2)", "to": "c_supersymmetry", "width": 2}, {"color": "#e67e2266", "from": "c_dark energy", "title": "RELATED_TO (strength: 2)", "to": "c_equation of state", "width": 2}, {"color": "#e67e2266", "from": "c_black hole", "title": "RELATED_TO (strength: 2)", "to": "c_neutron star", "width": 2}, {"color": "#e67e2266", "from": "c_gamma ray burst", "title": "RELATED_TO (strength: 2)", "to": "c_gravitational wave", "width": 2}, {"color": "#e67e2266", "from": "c_black hole", "title": "RELATED_TO (strength: 3)", "to": "c_gravitational wave", "width": 3}, {"color": "#e67e2266", "from": "c_quantum chromodynamics", "title": "RELATED_TO (strength: 2)", "to": "c_renormalization group", "width": 2}, {"color": "#e67e2266", "from": "c_higgs boson", "title": "RELATED_TO (strength: 4)", "to": "c_standard model", "width": 4}, {"color": "#e67e2266", "from": "c_metallicity", "title": "RELATED_TO (strength: 2)", "to": "c_velocity dispersion", "width": 2}, {"color": "#e67e2266", "from": "c_electroweak symmetry breaking", "title": "RELATED_TO (strength: 3)", "to": "c_higgs boson", "width": 3}, {"color": "#e67e2266", "from": "c_active galactic nucleus", "title": "RELATED_TO (strength: 2)", "to": "c_supermassive black hole", "width": 2}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_chaos theory", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (3 papers)", "to": "a_computational physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (2 papers)", "to": "a_star formation", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_many-body physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_nanotechnology", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_galactic astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_high energy astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_cosmology", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_stellar dynamics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_solar physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_general relativity", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (4 papers)", "to": "a_plasma physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_ecology", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_soft condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (2 papers)", "to": "a_statistical physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (9 papers)", "to": "a_astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_applied mathematics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (3 papers)", "to": "a_dynamical systems", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (2 papers)", "to": "a_nonlinear dynamics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (3 papers)", "to": "a_condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (2 papers)", "to": "a_atomic physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_fluid dynamics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (3 papers)", "to": "a_quantum physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_biophysics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_statistical mechanics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_quantum information", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (2 papers)", "to": "a_complex systems", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_galaxy evolution", "width": 1}, {"color": "#f39c1266", "from": "m_numerical simulation", "title": "APPLIED_IN (1 papers)", "to": "a_network science", "width": 1}, {"color": "#f39c1266", "from": "m_bifurcation analysis", "title": "APPLIED_IN (2 papers)", "to": "a_dynamical systems", "width": 1}, {"color": "#f39c1266", "from": "m_bifurcation analysis", "title": "APPLIED_IN (1 papers)", "to": "a_mathematical physics", "width": 1}, {"color": "#f39c1266", "from": "m_bifurcation analysis", "title": "APPLIED_IN (1 papers)", "to": "a_complex systems", "width": 1}, {"color": "#f39c1266", "from": "m_bifurcation analysis", "title": "APPLIED_IN (1 papers)", "to": "a_statistical mechanics", "width": 1}, {"color": "#f39c1266", "from": "m_bifurcation analysis", "title": "APPLIED_IN (1 papers)", "to": "a_differential geometry", "width": 1}, {"color": "#f39c1266", "from": "m_bifurcation analysis", "title": "APPLIED_IN (1 papers)", "to": "a_plasma physics", "width": 1}, {"color": "#f39c1266", "from": "m_bifurcation analysis", "title": "APPLIED_IN (2 papers)", "to": "a_nonlinear dynamics", "width": 1}, {"color": "#f39c1266", "from": "m_simulation", "title": "APPLIED_IN (1 papers)", "to": "a_cosmic ray physics", "width": 1}, {"color": "#f39c1266", "from": "m_simulation", "title": "APPLIED_IN (1 papers)", "to": "a_cyber security", "width": 1}, {"color": "#f39c1266", "from": "m_simulation", "title": "APPLIED_IN (1 papers)", "to": "a_high energy physics", "width": 1}, {"color": "#f39c1266", "from": "m_simulation", "title": "APPLIED_IN (1 papers)", "to": "a_control systems", "width": 1}, {"color": "#f39c1266", "from": "m_simulation", "title": "APPLIED_IN (1 papers)", "to": "a_acoustics", "width": 1}, {"color": "#f39c1266", "from": "m_simulation", "title": "APPLIED_IN (1 papers)", "to": "a_particle physics", "width": 1}, {"color": "#f39c1266", "from": "m_simulation", "title": "APPLIED_IN (1 papers)", "to": "a_astroparticle physics", "width": 1}, {"color": "#f39c1266", "from": "m_simulation", "title": "APPLIED_IN (1 papers)", "to": "a_nuclear physics", "width": 1}, {"color": "#f39c1266", "from": "m_simulation", "title": "APPLIED_IN (1 papers)", "to": "a_power systems", "width": 1}, {"color": "#f39c1266", "from": "m_statistical analysis", "title": "APPLIED_IN (1 papers)", "to": "a_x-ray astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_statistical analysis", "title": "APPLIED_IN (2 papers)", "to": "a_astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_statistical analysis", "title": "APPLIED_IN (1 papers)", "to": "a_astroparticle physics", "width": 1}, {"color": "#f39c1266", "from": "m_statistical analysis", "title": "APPLIED_IN (1 papers)", "to": "a_planetary science", "width": 1}, {"color": "#f39c1266", "from": "m_statistical analysis", "title": "APPLIED_IN (1 papers)", "to": "a_cosmology", "width": 1}, {"color": "#f39c1266", "from": "m_nuclear quadrupole resonance measurement", "title": "APPLIED_IN (2 papers)", "to": "a_condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_nuclear quadrupole resonance measurement", "title": "APPLIED_IN (1 papers)", "to": "a_magnetism", "width": 1}, {"color": "#f39c1266", "from": "m_nuclear quadrupole resonance measurement", "title": "APPLIED_IN (2 papers)", "to": "a_superconductivity", "width": 1}, {"color": "#f39c1266", "from": "m_ising model", "title": "APPLIED_IN (1 papers)", "to": "a_condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_ising model", "title": "APPLIED_IN (2 papers)", "to": "a_statistical mechanics", "width": 1}, {"color": "#f39c1266", "from": "m_ising model", "title": "APPLIED_IN (1 papers)", "to": "a_theoretical physics", "width": 1}, {"color": "#f39c1266", "from": "m_ising model", "title": "APPLIED_IN (1 papers)", "to": "a_mathematical physics", "width": 1}, {"color": "#f39c1266", "from": "m_linearization", "title": "APPLIED_IN (1 papers)", "to": "a_mathematical physics", "width": 1}, {"color": "#f39c1266", "from": "m_linearization", "title": "APPLIED_IN (1 papers)", "to": "a_differential equations", "width": 1}, {"color": "#f39c1266", "from": "m_linearization", "title": "APPLIED_IN (1 papers)", "to": "a_differential geometry", "width": 1}, {"color": "#f39c1266", "from": "m_linearization", "title": "APPLIED_IN (1 papers)", "to": "a_superconductivity", "width": 1}, {"color": "#f39c1266", "from": "m_linearization", "title": "APPLIED_IN (1 papers)", "to": "a_dynamical systems", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_nanotechnology", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (3 papers)", "to": "a_condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_gravitational wave astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_nuclear physics", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_statistical mechanics", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (6 papers)", "to": "a_statistical physics", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_computer vision", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_cosmology", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_robotics", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_machine learning", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_magnetism", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (2 papers)", "to": "a_polymer physics", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (2 papers)", "to": "a_astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_evolutionary biology", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_complex systems", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (2 papers)", "to": "a_computational physics", "width": 1}, {"color": "#f39c1266", "from": "m_monte carlo simulation", "title": "APPLIED_IN (1 papers)", "to": "a_high energy astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_associated production", "title": "APPLIED_IN (2 papers)", "to": "a_high energy physics", "width": 1}, {"color": "#f39c1266", "from": "m_associated production", "title": "APPLIED_IN (2 papers)", "to": "a_particle physics", "width": 1}, {"color": "#f39c1266", "from": "m_associated production", "title": "APPLIED_IN (2 papers)", "to": "a_experimental physics", "width": 1}, {"color": "#f39c1266", "from": "m_x-ray survey", "title": "APPLIED_IN (1 papers)", "to": "a_galaxy evolution", "width": 1}, {"color": "#f39c1266", "from": "m_x-ray survey", "title": "APPLIED_IN (1 papers)", "to": "a_cosmology", "width": 1}, {"color": "#f39c1266", "from": "m_x-ray survey", "title": "APPLIED_IN (1 papers)", "to": "a_observational astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_x-ray survey", "title": "APPLIED_IN (2 papers)", "to": "a_astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_x-ray survey", "title": "APPLIED_IN (1 papers)", "to": "a_x-ray astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_numerical method", "title": "APPLIED_IN (1 papers)", "to": "a_condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical method", "title": "APPLIED_IN (1 papers)", "to": "a_astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical method", "title": "APPLIED_IN (1 papers)", "to": "a_general relativity", "width": 1}, {"color": "#f39c1266", "from": "m_numerical method", "title": "APPLIED_IN (1 papers)", "to": "a_superconductivity", "width": 1}, {"color": "#f39c1266", "from": "m_numerical method", "title": "APPLIED_IN (1 papers)", "to": "a_topological quantum computation", "width": 1}, {"color": "#f39c1266", "from": "m_numerical method", "title": "APPLIED_IN (1 papers)", "to": "a_theoretical physics", "width": 1}, {"color": "#f39c1266", "from": "m_spectral analysis", "title": "APPLIED_IN (1 papers)", "to": "a_planetary science", "width": 1}, {"color": "#f39c1266", "from": "m_spectral analysis", "title": "APPLIED_IN (1 papers)", "to": "a_infrared astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_spectral analysis", "title": "APPLIED_IN (2 papers)", "to": "a_high energy astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_spectral analysis", "title": "APPLIED_IN (1 papers)", "to": "a_cosmology", "width": 1}, {"color": "#f39c1266", "from": "m_spectral analysis", "title": "APPLIED_IN (5 papers)", "to": "a_astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_spectral analysis", "title": "APPLIED_IN (1 papers)", "to": "a_stellar astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_infrared spectroscopy", "title": "APPLIED_IN (1 papers)", "to": "a_astrochemistry", "width": 1}, {"color": "#f39c1266", "from": "m_infrared spectroscopy", "title": "APPLIED_IN (1 papers)", "to": "a_stellar evolution", "width": 1}, {"color": "#f39c1266", "from": "m_infrared spectroscopy", "title": "APPLIED_IN (5 papers)", "to": "a_astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_infrared spectroscopy", "title": "APPLIED_IN (1 papers)", "to": "a_radio astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_infrared spectroscopy", "title": "APPLIED_IN (1 papers)", "to": "a_planetary science", "width": 1}, {"color": "#f39c1266", "from": "m_infrared spectroscopy", "title": "APPLIED_IN (3 papers)", "to": "a_infrared astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_density functional theory", "title": "APPLIED_IN (1 papers)", "to": "a_polymer physics", "width": 1}, {"color": "#f39c1266", "from": "m_density functional theory", "title": "APPLIED_IN (2 papers)", "to": "a_condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_density functional theory", "title": "APPLIED_IN (1 papers)", "to": "a_statistical physics", "width": 1}, {"color": "#f39c1266", "from": "m_density functional theory", "title": "APPLIED_IN (2 papers)", "to": "a_superconductivity", "width": 1}, {"color": "#f39c1266", "from": "m_density functional theory", "title": "APPLIED_IN (1 papers)", "to": "a_spintronics", "width": 1}, {"color": "#f39c1266", "from": "m_gravitational wave detection", "title": "APPLIED_IN (2 papers)", "to": "a_astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_gravitational wave detection", "title": "APPLIED_IN (2 papers)", "to": "a_gravitational wave astronomy", "width": 1}, {"color": "#f39c1266", "from": "m_gravitational wave detection", "title": "APPLIED_IN (2 papers)", "to": "a_cosmology", "width": 1}, {"color": "#f39c1266", "from": "m_gravitational wave detection", "title": "APPLIED_IN (1 papers)", "to": "a_black hole physics", "width": 1}, {"color": "#f39c1266", "from": "m_gravitational wave detection", "title": "APPLIED_IN (1 papers)", "to": "a_gravitational physics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_dynamical systems", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_nuclear physics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_nonlinear science", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_theoretical physics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_fluid dynamics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_mathematics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_quantum physics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_nonlinear dynamics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbation theory", "title": "APPLIED_IN (1 papers)", "to": "a_statistical physics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbative quantum chromodynamics", "title": "APPLIED_IN (2 papers)", "to": "a_particle physics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbative quantum chromodynamics", "title": "APPLIED_IN (3 papers)", "to": "a_high energy physics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbative quantum chromodynamics", "title": "APPLIED_IN (1 papers)", "to": "a_quantum chromodynamics", "width": 1}, {"color": "#f39c1266", "from": "m_perturbative quantum chromodynamics", "title": "APPLIED_IN (3 papers)", "to": "a_nuclear physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical integration", "title": "APPLIED_IN (1 papers)", "to": "a_condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical integration", "title": "APPLIED_IN (1 papers)", "to": "a_quantum field theory", "width": 1}, {"color": "#f39c1266", "from": "m_numerical integration", "title": "APPLIED_IN (1 papers)", "to": "a_stochastic processes", "width": 1}, {"color": "#f39c1266", "from": "m_numerical integration", "title": "APPLIED_IN (1 papers)", "to": "a_general relativity", "width": 1}, {"color": "#f39c1266", "from": "m_numerical integration", "title": "APPLIED_IN (1 papers)", "to": "a_applied mathematics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical integration", "title": "APPLIED_IN (2 papers)", "to": "a_astrophysics", "width": 1}, {"color": "#f39c1266", "from": "m_numerical integration", "title": "APPLIED_IN (1 papers)", "to": "a_planetary science", "width": 1}, {"color": "#f39c1266", "from": "m_numerical integration", "title": "APPLIED_IN (1 papers)", "to": "a_numerical analysis", "width": 1}, {"color": "#f39c1266", "from": "m_molecular dynamics simulation", "title": "APPLIED_IN (1 papers)", "to": "a_statistical physics", "width": 1}, {"color": "#f39c1266", "from": "m_molecular dynamics simulation", "title": "APPLIED_IN (2 papers)", "to": "a_computational physics", "width": 1}, {"color": "#f39c1266", "from": "m_molecular dynamics simulation", "title": "APPLIED_IN (4 papers)", "to": "a_condensed matter physics", "width": 1}, {"color": "#f39c1266", "from": "m_molecular dynamics simulation", "title": "APPLIED_IN (1 papers)", "to": "a_tribology", "width": 1}, {"color": "#f39c1266", "from": "m_stability analysis", "title": "APPLIED_IN (1 papers)", "to": "a_nonlinear dynamics", "width": 1}, {"color": "#f39c1266", "from": "m_stability analysis", "title": "APPLIED_IN (1 papers)", "to": "a_stochastic processes", "width": 1}, {"color": "#f39c1266", "from": "m_stability analysis", "title": "APPLIED_IN (1 papers)", "to": "a_general relativity", "width": 1}, {"color": "#f39c1266", "from": "m_stability analysis", "title": "APPLIED_IN (1 papers)", "to": "a_plasma physics", "width": 1}, {"color": "#f39c1266", "from": "m_stability analysis", "title": "APPLIED_IN (1 papers)", "to": "a_complex systems", "width": 1}, {"color": "#f39c1266", "from": "m_stability analysis", "title": "APPLIED_IN (1 papers)", "to": "a_applied mathematics", "width": 1}, {"color": "#f39c1266", "from": "m_stability analysis", "title": "APPLIED_IN (1 papers)", "to": "a_theoretical physics", "width": 1}, {"color": "#f39c1266", "from": "m_stability analysis", "title": "APPLIED_IN (1 papers)", "to": "a_gravitational physics", "width": 1}, {"color": "#f39c1266", "from": "m_stability analysis", "title": "APPLIED_IN (1 papers)", "to": "a_numerical analysis", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"forceAtlas2Based": {"gravitationalConstant": -150, "centralGravity": 0.005, "springLength": 250, "springConstant": 0.03}, "solver": "forceAtlas2Based", "stabilization": {"iterations": 200}}, "nodes": {"font": {"size": 12, "face": "Arial"}}, "edges": {"smooth": {"type": "continuous"}}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
