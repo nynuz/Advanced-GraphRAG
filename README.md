@@ -8,32 +8,7 @@ The graph doesn't just enrich results with metadata -- it **discovers new releva
 
 ## Architecture
 
-```
-Query
-  |
-  v
-Qdrant Hybrid Search (Dense + BM25 + RRF Fusion)
-  |
-  v
-Top-K Chunks + Paper IDs
-  |
-  v
-Neo4j Multi-Hop Graph Traversal
-  |                          |
-  v                          v
-Graph Context          Discovered Papers
-(concepts, methods,    (found via shared
- relationships)         concepts/methods)
-  |                          |
-  v                          v
-Fetch chunks from discovered papers (Qdrant)
-  |
-  v
-Merge + Deduplicate + Re-rank
-  |
-  v
-Enriched Context --> LLM --> Answer
-```
+![GraphRAG Architecture](images/graphrag-schema.png)
 
 ## Dataset
 
