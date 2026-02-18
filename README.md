@@ -10,6 +10,10 @@ The graph doesn't just enrich results with metadata -- it **discovers new releva
 
 ![GraphRAG Architecture](images/graphrag-schema.png)
 
+<p align="center">
+  <img width="460" height="300" src="https://github.com/nynuz/Advanced-GraphRAG/blob/main/images/graphrag-schema.png">
+</p>
+
 ## Dataset
 
 I used dataset `armanc/scientific_papers` from HuggingFace. For speed of development, I only used the first ArXiv 500 papers, which I saved in `papers_data.csv`.
