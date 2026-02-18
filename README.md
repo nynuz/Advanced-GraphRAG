@@ -8,10 +8,8 @@ The graph doesn't just enrich results with metadata -- it **discovers new releva
 
 ## Architecture
 
-![GraphRAG Architecture](images/graphrag-schema.png)
-
 <p align="center">
-  <img width="460" height="300" src="https://github.com/nynuz/Advanced-GraphRAG/blob/main/images/graphrag-schema.png">
+  <img width="768" src="https://github.com/nynuz/Advanced-GraphRAG/blob/main/images/graphrag-schema.png">
 </p>
 
 ## Dataset
